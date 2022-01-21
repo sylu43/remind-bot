@@ -41,12 +41,26 @@ static int get_task_num_callback(void *data, int argc, char **argv, char **cols)
 }
 
 int64_t get_task_num(){
-    if(!check_table_empty()){
-        return 0;
-    }
-    char sql[512] = "select max(task_id) from " ALLTIME_TABLE_NAME;
+    sqlite3_stmt *stmt;
+    int rc;
     int64_t result;
-    sqlite3_exec(db, sql, get_task_num_callback, &result, NULL);
+    rc = sqlite3_prepare_v2(db, "select max(task_id) from " ALLTIME_TABLE_NAME, -1, &stmt, NULL);
+    if(rc != SQLITE_OK){
+        return -1;
+    }
+    rc = sqlite3_step(stmt);
+    if(rc != SQLITE_ROW && rc != SQLITE_DONE){
+        result = -1;
+    } else if(rc == SQLITE_DONE){
+        result = -1;
+    } else if(sqlite3_column_type(stmt, 0) == SQLITE_NULL){
+        result = 0;
+    } else if(rc == SQLITE_ROW){
+        result = sqlite3_column_int64(stmt, 0);
+    } else {
+        result = -1;
+    }
+    sqlite3_finalize(stmt);
     return result;
 }
 
@@ -157,11 +171,9 @@ int new_reminds(int task_num, int frequency, vector<array<int, 2>> periods, int 
     std::uniform_int_distribution<int> distrib(0, MINUTES_PER_DAY - total_offset - 1);
     for(int i = 0; i < frequency; i++){
         t = distrib(gen);
-        //cout << "t: " << t << "\n";
         for(auto period : periods){
             if(t >= period[0]){
                 t += (period[1] + 1);
-                //cout << "t becomes: " << t << "\n";
             }
         }
         if(t <= cur_min){
@@ -234,3 +246,47 @@ int prefetch_reminds(char* sql, vector<pair<int64_t, string>>* remind_buffer){
     return 0;
 }
 
+int delete_task(int64_t group_id, int task_index){
+    char sql[512];
+    int task_id, rc;
+    sqlite3_stmt *stmt;
+
+    //get task id
+    sprintf(sql, "select task_id from " ALLTIME_TABLE_NAME " where group_id = %lld order by task_id", group_id, (task_index - 1));
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
+    if(rc != SQLITE_OK){
+        return -1;
+    }
+    for(int i = 0; i < task_index; i++){
+        rc = sqlite3_step(stmt);
+        if(rc != SQLITE_ROW && rc != SQLITE_DONE){
+            task_id = -1;
+            break;
+        } else if(rc == SQLITE_DONE){
+            task_id = -2;
+            break;
+        } else if(rc == SQLITE_ROW){
+            task_id = sqlite3_column_int(stmt, 0);
+        } else {
+            task_id = -1;
+            break;
+        }
+    }
+    sqlite3_finalize(stmt);
+    if(task_id < 0){
+        return task_id;
+    }
+
+    //deletion
+    sprintf(sql, "delete from " DAILY_TABLE_NAME " where task_id = %d", task_id);
+    rc = sqlite3_exec(db, sql, NULL, NULL, NULL);
+    if(rc){
+        return -1;
+    }
+    sprintf(sql, "delete from " ALLTIME_TABLE_NAME " where task_id = %d", task_id);
+    rc = sqlite3_exec(db, sql, NULL, NULL, NULL);
+    if(rc){
+        return -1;
+    }
+    return 0;
+}

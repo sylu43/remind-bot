@@ -70,6 +70,24 @@ int main() {
     bot.getEvents().onCommand("start", [&bot](Message::Ptr message) {
         bot.getApi().sendMessage(message->chat->id, "Hi!");
     });
+    bot.getEvents().onCommand("delete", [&bot](Message::Ptr message) {
+        int task_index, rc;
+        int64_t group_id = message->chat->id;
+        if((task_index = parse_delete_command(message->text)) == -1){
+            bot.getApi().sendMessage(group_id, "Bad command");
+            return;
+        }
+        rc = delete_task(group_id, task_index);
+        if(rc == -1){
+            bot.getApi().sendMessage(group_id, "Internal error");
+            return;
+        } else if (rc == -2){
+            bot.getApi().sendMessage(group_id, "Index out of range");
+            return;
+        }
+        bot.getApi().sendMessage(group_id, "Task deleted!");
+        return;
+    });
     bot.getEvents().onCommand("list", [&bot](Message::Ptr message) {
         time_t now = time(NULL);
         tm *tm_local = localtime(&now);

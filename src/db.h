@@ -20,5 +20,6 @@ int add_task_from_command(int task_num, int64_t group_id, string msg, int freque
 int new_reminds(int task_num, int frequency, vector<array<int, 2>> periods, int cur_min);
 string find_all_task_in_group(int64_t group_id, int cur_min);
 int prefetch_reminds(char* sql, vector<pair<int64_t, string>>* remind_buffer);
+int delete_task(int64_t group_id, int task_index);
 
 #endif

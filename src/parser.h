@@ -8,7 +8,7 @@
 using namespace std;
 
 int parse_remind_command(string s, int64_t group_id);
-int parse_delete_command(string s, int64_t group_id);
+int parse_delete_command(string s);
 int parse_remind_command_time(string s);
 array<int, 2> parse_remind_command_period(string s);
 vector<array<int, 2>> parse_remind_command_periods(string s);

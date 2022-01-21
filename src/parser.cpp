@@ -55,15 +55,16 @@ int parse_remind_command(string s, int64_t group_id){
     }
 }
 
-int parse_delete_command(string s, int64_t group_id){
+int parse_delete_command(string s){
     smatch match;
     int index;
     regex rgx("^/delete\\s+(\\d+)\\s*$");
     if(regex_search(s, match, rgx)){
         istringstream(match[1]) >> index;
+    } else {
+        index = -1;
     }
-    cout << index;
-    return 0;
+    return index;
 }
 
 int parse_remind_command_time(string s){
