@@ -128,18 +128,10 @@ int set_view(){
 
 int add_task_from_command(int task_num, int64_t group_id, string msg, int frequency, int including, vector<array<int, 2>> periods){
     char sql[512];
-    string periods_str("");
+    string periods_str;
 
     if(including != -1){
-
-        // process periods
-        for(auto inclusion : periods){
-            periods_str += to_string(inclusion[0]);
-            periods_str += "+";
-            periods_str += to_string(inclusion[1]);
-            periods_str += ";";
-        }
-        periods_str.back() = '\0';
+        periods_str = stringify_periods(periods);
     }
 
     // add to all time DB first

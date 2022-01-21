@@ -137,3 +137,30 @@ vector<array<int, 2>> reverse_remind_command_periods(vector<array<int, 2>> perio
     }
     return real_periods;
 }
+
+string stringify_periods(vector<array<int, 2>> periods){
+    string s;
+    for(auto period : periods){
+        s += to_string(period[0]);
+        s += "+";
+        s += to_string(period[1]);
+        s += ";";
+    }
+    s.back() = '\0';
+    return s;
+}
+
+vector<array<int, 2>> unstringify_periods(string periods_str){
+    int start;
+    string tok1, tok2;
+    stringstream ss1(periods_str);
+    vector<array<int, 2>> vec;
+    while(getline(ss1, tok1, ';')){
+        stringstream ss2(tok1);
+        getline(ss2, tok2, '+');
+        start = stoi(tok2);
+        getline(ss2, tok2, '+');
+        vec.push_back({start, stoi(tok2)});
+    }
+    return vec;
+}

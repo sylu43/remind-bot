@@ -14,5 +14,7 @@ array<int, 2> parse_remind_command_period(string s);
 vector<array<int, 2>> parse_remind_command_periods(string s);
 int remind_command_periods_check(vector<array<int, 2>> periods);
 vector<array<int, 2>> reverse_remind_command_periods(vector<array<int, 2>> periods);
+string stringify_periods(vector<array<int, 2>> periods);
+vector<array<int, 2>> unstringify_periods(string periods_str);
 
 #endif
