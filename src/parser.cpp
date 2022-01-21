@@ -38,7 +38,9 @@ int parse_remind_command(string s, int64_t group_id){
             including = (inclusions[pos] == 'i' ? 1 : 0);
             inclusions[pos] = ' ';
 
-            periods = parse_remind_command_periods(inclusions);
+            if(parse_remind_command_periods(inclusions, &periods) == -1){
+                return -2;
+            }
             if(remind_command_periods_check(periods) == -1){
                 return -2;
             }
@@ -76,10 +78,13 @@ int parse_remind_command_time(string s){
     if(getline(ss, tok, ':')){
         min = stoi(tok);
     }
+    if(hour >23 || min > 59){
+        return -1;
+    }
     return hour * 60 + min;
 }
 
-array<int, 2> parse_remind_command_period(string s){
+int parse_remind_command_period(string s, array<int, 2> *period){
     stringstream ss(s);
     string tok;
     int start, end;
@@ -87,24 +92,31 @@ array<int, 2> parse_remind_command_period(string s){
     start = parse_remind_command_time(tok);
     getline(ss, tok, '~');
     end = parse_remind_command_time(tok);
-    return {start, end - start - 1};
+    if(start < 0 || end < 0){
+        return -1;
+    }
+    *period = {start, end - start - 1};
+    return 0;
 }
 
-vector<array<int, 2>> parse_remind_command_periods(string s){
-    stringstream ss(s);
+int parse_remind_command_periods(string s, vector<array<int, 2>> *periods){
     string tok;
-    vector<array<int, 2>> vec;
+    stringstream ss(s);
+    array<int, 2> period;
     while(getline(ss, tok, ',')){
-        vec.push_back(parse_remind_command_period(tok));
+        if(parse_remind_command_period(tok, &period) == -1){
+            return -1;
+        }
+        (*periods).push_back(period);
     }
 
     // sort result
-    sort(vec.begin(), vec.end(), [](const array<int, 2>& lhs, const array<int, 2>& rhs){
+    sort((*periods).begin(), (*periods).end(), [](const array<int, 2>& lhs, const array<int, 2>& rhs){
             return lhs[0] < rhs[0];
         }
     );
     
-    return vec;
+    return 0;
 }
 
 int remind_command_periods_check(vector<array<int, 2>> periods){
