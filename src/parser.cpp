@@ -23,7 +23,7 @@ int parse_remind_command(string s, int64_t group_id){
     int including = -1;
     string inclusions("");
     vector<array<int, 2>> periods;
-    regex rgx("^/remind\\s+\"(\\w+)\"(\\s+[0-9]+)?(\\s+[ei]\\s+(\\d{1,2}(:\\d{2})?~\\d{1,2}(:\\d{2})?)(,\\s*\\d{1,2}(:\\d{2})?~\\d{1,2}(:\\d{2})?)*)?\\s*$");
+    regex rgx("^/remind\\s+\"(.+)\"(\\s+[0-9]+)?(\\s+[ei]\\s+(\\d{1,2}(:\\d{2})?~\\d{1,2}(:\\d{2})?)(,\\s*\\d{1,2}(:\\d{2})?~\\d{1,2}(:\\d{2})?)*)?\\s*$");
     if(regex_search(s, match, rgx)){
         // message
         msg = string(match[1]);
@@ -175,4 +175,9 @@ vector<array<int, 2>> unstringify_periods(string periods_str){
         vec.push_back({start, stoi(tok2)});
     }
     return vec;
+}
+
+void avoid_tag(string *s){
+    regex re("[\\s=\\+\\-\\*/~`!@#$%\\^&\\(\\)\\[\\]{}|;:'\"\\\\<>,\\.]@([\\da-zA-Z_]{5,32}\\s)");
+    *s = regex_replace(*s, re, " @ $1");
 }

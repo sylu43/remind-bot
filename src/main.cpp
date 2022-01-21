@@ -101,6 +101,7 @@ int main() {
         int cur_min = tm_local->tm_hour * 60 + tm_local->tm_min;
         int64_t group_id = message->chat->id;
         string s = find_all_task_in_group(group_id, cur_min);
+        avoid_tag(&s);
         bot.getApi().sendMessage(group_id, s);
     });
     bot.getEvents().onCommand("remind", [&bot](Message::Ptr message) {

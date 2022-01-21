@@ -221,7 +221,7 @@ static int list_callback(void *data, int argc, char **argv, char **cols){
     string *result = (string *)data;
     //list_index
     *result += to_string(list_index++);
-    *result += ". ";
+    *result += ".  每日關心";
     //msg
     *result += argv[0];
     *result += "(";
