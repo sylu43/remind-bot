@@ -74,8 +74,11 @@ int main() {
     task_num = get_task_num() + 1;
 
     Bot bot(token);
-    bot.getEvents().onCommand("start", [&bot](Message::Ptr message) {
-        bot.getApi().sendMessage(message->chat->id, "Hi!");
+    bot.getEvents().onAnyMessage([&bot](Message::Ptr message) {
+        if(message->text.find("不要") != string::npos || message->text.find("鼻藥") != string::npos || message->text.find("鼻要") != string::npos){
+            bot.getApi().sendSticker(message->chat->id, "CAACAgUAAx0CacyfrAACAxdh6AHKQ_9ITQ6HW9uVkT9uf2NZygAC5gIAArDPuVV6z6He8xoIDCME", message->messageId);
+        }
+        return;
     });
     bot.getEvents().onCommand("delete", [&bot](Message::Ptr message) {
         int task_index, rc;
@@ -93,6 +96,13 @@ int main() {
             return;
         }
         bot.getApi().sendMessage(group_id, "Task deleted!");
+        return;
+    });
+    bot.getEvents().onCommand("bonk", [&bot](Message::Ptr message) {
+        srand(time(NULL));
+        int r = (int)(100.0 * rand() / RAND_MAX);
+        cout <<r << "\n";
+        bot.getApi().sendSticker(message->chat->id, "CAACAgUAAx0CacyfrAACAxdh6AHKQ_9ITQ6HW9uVkT9uf2NZygAC5gIAArDPuVV6z6He8xoIDCME", message->messageId - r);
         return;
     });
     bot.getEvents().onCommand("list", [&bot](Message::Ptr message) {
