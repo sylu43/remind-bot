@@ -31,19 +31,26 @@ void remind_thread_f(Bot *bot){
     vector<pair<int64_t, string>> remind_buffer;
     
     while(1){
-        //fetch message for next minute
-        sprintf(sql, "select all_time.group_id, all_time.msg from all_time LEFT JOIN daily on all_time.task_id = daily.task_id where time=%d", cur_min + 2);
-        prefetch_reminds(sql, &remind_buffer);
+        now = time(NULL);
+        tm_local = localtime(&now);
+        cur_min = tm_local->tm_hour * 60 + tm_local->tm_min;
+        //set daily reminds
+        if(!cur_min){
+            add_task_daily();
+        }
+        //fetch messages
+        sprintf(sql, "select all_time.group_id, all_time.msg from all_time LEFT JOIN daily on all_time.task_id = daily.task_id where time=%d", cur_min);
+        fetch_reminds(sql, &remind_buffer);
+        for(auto remind : remind_buffer){
+            (*bot).getApi().sendMessage(remind.first, remind.second);
+        }
+        remind_buffer.clear();
 
         //sleep for next round and send
         now = time(NULL);
         tm_local = localtime(&now);
         cur_min = tm_local->tm_hour * 60 + tm_local->tm_min;
         this_thread::sleep_for(chrono::seconds(60 - tm_local->tm_sec));
-        for(auto remind : remind_buffer){
-            (*bot).getApi().sendMessage(remind.first, remind.second);
-        }
-        remind_buffer.clear();
     }
 }
 

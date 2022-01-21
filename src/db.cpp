@@ -125,8 +125,7 @@ int set_view(){
     return 0;
 }
 
-
-int add_task_from_command(int task_num, int64_t group_id, string msg, int frequency, int including, vector<array<int, 2>> periods){
+int add_task_from_command(int task_id, int64_t group_id, string msg, int frequency, int including, vector<array<int, 2>> periods){
     char sql[512];
     string periods_str;
 
@@ -135,7 +134,7 @@ int add_task_from_command(int task_num, int64_t group_id, string msg, int freque
     }
 
     // add to all time DB first
-    sprintf(sql, "insert into " ALLTIME_TABLE_NAME "(task_id, group_id, msg, frequency, periods) values (%d, %lld, '%s', %d, '%s')", task_num, group_id, msg.c_str(), frequency, periods_str.c_str());
+    sprintf(sql, "insert into " ALLTIME_TABLE_NAME "(task_id, group_id, msg, frequency, periods) values (%d, %lld, '%s', %d, '%s')", task_id, group_id, msg.c_str(), frequency, periods_str.c_str());
     if(sqlite3_exec(db, sql, NULL, 0, NULL) != SQLITE_OK){
         return -1;
     }
@@ -145,11 +144,46 @@ int add_task_from_command(int task_num, int64_t group_id, string msg, int freque
     tm *tm_local = localtime(&now);
     int cur_min = tm_local->tm_min + tm_local->tm_hour * 60;
     //add to daily DB
-    new_reminds(task_num, frequency, periods, cur_min);
+    new_reminds(task_id, frequency, periods, cur_min);
     return 0;
 }
 
-int new_reminds(int task_num, int frequency, vector<array<int, 2>> periods, int cur_min){
+static int add_task_daily_callback(void *data, int argc, char **argv, char **cols){
+    vector<task_info_t> *task_infos = (vector<task_info_t> *)data;
+    task_info_t task_info;
+
+    task_info.task_id = stoi(argv[0]);
+    task_info.frequency = stoi(argv[1]);
+    task_info.periods_str = argv[2];
+
+    (*task_infos).push_back(task_info);
+    return 0;
+}
+
+int add_task_daily(){
+    int rc;
+    string sql;
+    vector<task_info_t> task_infos;
+
+    //delete last day table first
+    rc = sqlite3_exec(db, "delete from " DAILY_TABLE_NAME, NULL, NULL, NULL);
+    if(rc){
+        return -1;
+    }
+
+    //get all
+    rc = sqlite3_exec(db, "select task_id, frequency, periods from " ALLTIME_TABLE_NAME, add_task_daily_callback, &task_infos, NULL);
+
+    for(auto task_info : task_infos){
+        vector<array<int, 2>> periods = unstringify_periods(task_info.periods_str);
+        if(new_reminds(task_info.task_id, task_info.frequency, periods, -1) == -1){
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int new_reminds(int task_id, int frequency, vector<array<int, 2>> periods, int cur_min){
     //calculate available time available
     int total_offset = 0;
     char sql[512];
@@ -171,7 +205,7 @@ int new_reminds(int task_num, int frequency, vector<array<int, 2>> periods, int 
         if(t <= cur_min){
             continue;
         }
-        sprintf(sql, "insert into " DAILY_TABLE_NAME "(task_id, time) values (%d, %d)", task_num, t);
+        sprintf(sql, "insert into " DAILY_TABLE_NAME "(task_id, time) values (%d, %d)", task_id, t);
         if(sqlite3_exec(db, sql, NULL, 0, NULL) != SQLITE_OK){
             return -1;
         }
@@ -221,7 +255,7 @@ string find_all_task_in_group(int64_t group_id, int cur_min){
     return (s.length() > 0) ? s : "No task!";
 }
 
-int prefetch_reminds(char* sql, vector<pair<int64_t, string>>* remind_buffer){
+int fetch_reminds(char* sql, vector<pair<int64_t, string>>* remind_buffer){
     vector<pair<int64_t, string>>* result= remind_buffer;
     sqlite3_stmt *stmt;
     int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
@@ -244,7 +278,7 @@ int delete_task(int64_t group_id, int task_index){
     sqlite3_stmt *stmt;
 
     //get task id
-    sprintf(sql, "select task_id from " ALLTIME_TABLE_NAME " where group_id = %lld order by task_id", group_id, (task_index - 1));
+    sprintf(sql, "select task_id from " ALLTIME_TABLE_NAME " where group_id = %lld order by task_id", group_id);
     rc = sqlite3_prepare_v2(db, sql, -1, &stmt, NULL);
     if(rc != SQLITE_OK){
         return -1;
