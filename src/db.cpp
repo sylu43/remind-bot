@@ -186,7 +186,7 @@ int add_task_daily(){
 int new_reminds(int task_id, int frequency, vector<array<int, 2>> periods, int cur_min){
     //calculate available time available
     int total_offset = 0;
-    char sql[512];
+    string sql = "insert into " DAILY_TABLE_NAME "(task_id, time) values";
     for(auto period : periods){
         total_offset += (period[1] + 1);
     }
@@ -195,6 +195,8 @@ int new_reminds(int task_id, int frequency, vector<array<int, 2>> periods, int c
     random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> distrib(0, MINUTES_PER_DAY - total_offset - 1);
+
+    //generate times
     for(int i = 0; i < frequency; i++){
         t = distrib(gen);
         for(auto period : periods){
@@ -205,10 +207,11 @@ int new_reminds(int task_id, int frequency, vector<array<int, 2>> periods, int c
         if(t <= cur_min){
             continue;
         }
-        sprintf(sql, "insert into " DAILY_TABLE_NAME "(task_id, time) values (%d, %d)", task_id, t);
-        if(sqlite3_exec(db, sql, NULL, 0, NULL) != SQLITE_OK){
-            return -1;
-        }
+        sql += (" (" + to_string(task_id) + ", " + to_string(t) + "),");
+    }
+    sql[sql.length() - 1] = '\0';
+    if(sqlite3_exec(db, sql.c_str(), NULL, 0, NULL) != SQLITE_OK){
+        return -1;
     }
     return 0;
 }
