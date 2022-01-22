@@ -19,7 +19,7 @@ extern sqlite3 *db;
 int parse_remind_command(string s, int64_t group_id){
     smatch match;
     string msg;
-    int freq;
+    int freq, rc;
     int including = -1;
     string inclusions("");
     vector<array<int, 2>> periods;
@@ -30,6 +30,9 @@ int parse_remind_command(string s, int64_t group_id){
 
         // frequency
         istringstream(match[2]) >> freq;
+        if(freq > MINUTES_PER_DAY){
+            return -4;
+        }
 
         // include / exclude
         if(match[3].length() != 0){
@@ -41,8 +44,10 @@ int parse_remind_command(string s, int64_t group_id){
             if(parse_remind_command_periods(inclusions, &periods) == -1){
                 return -2;
             }
-            if(remind_command_periods_check(periods) == -1){
+            if((rc = remind_command_periods_check(periods, freq)) == -1){
                 return -2;
+            } else if (rc == -2){
+                return -4;
             }
             if(including){
                 periods = reverse_remind_command_periods(periods);
@@ -119,8 +124,11 @@ int parse_remind_command_periods(string s, vector<array<int, 2>> *periods){
     return 0;
 }
 
-int remind_command_periods_check(vector<array<int, 2>> periods){
-    for(unsigned int i = 0; i < periods.size() - 1; i++){
+int remind_command_periods_check(vector<array<int, 2>> periods, int freq){
+    int total_period = 0;
+    unsigned int i;
+    for(i = 0; i < periods.size() - 1; i++){
+        total_period += (periods[i][1] + 1);
         for(unsigned int j = i + 1; j < periods.size(); j++){
             if(periods[i][0] > periods[j][0] && periods[i][0] < (periods[j][0] + periods[j][1])){
                 return -1;
@@ -129,6 +137,10 @@ int remind_command_periods_check(vector<array<int, 2>> periods){
                 return -1;
             }
         }
+    }
+    total_period += (periods[i][1] + 1);
+    if(freq > MINUTES_PER_DAY - total_period){
+        return -2;
     }
     return 0;
 }

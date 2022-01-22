@@ -117,12 +117,14 @@ int main() {
         int rc = parse_remind_command(message->text, group_id); 
         if(rc == 0){
             bot.getApi().sendMessage(group_id, "Task set!");
-        } else if(rc == -1){
+        } else if (rc == -1){
             bot.getApi().sendMessage(group_id, "Bad command");
-        } else if(rc == -2){
+        } else if (rc == -2){
             bot.getApi().sendMessage(group_id, "Bad time periods");
         } else if (rc == -3){
             bot.getApi().sendMessage(group_id, "Internal error!");
+        } else if (rc == -4){
+            bot.getApi().sendMessage(group_id, "Too frequent!");
         }
     });
     signal(SIGINT, [](int s) {
