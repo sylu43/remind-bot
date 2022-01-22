@@ -100,9 +100,7 @@ int main() {
     });
     bot.getEvents().onCommand("bonk", [&bot](Message::Ptr message) {
         srand(time(NULL));
-        int r = (int)(100.0 * rand() / RAND_MAX);
-        cout <<r << "\n";
-        bot.getApi().sendSticker(message->chat->id, "CAACAgUAAx0CacyfrAACAxdh6AHKQ_9ITQ6HW9uVkT9uf2NZygAC5gIAArDPuVV6z6He8xoIDCME", message->messageId - r);
+        bot.getApi().sendSticker(message->chat->id, "CAACAgUAAx0CacyfrAACAxdh6AHKQ_9ITQ6HW9uVkT9uf2NZygAC5gIAArDPuVV6z6He8xoIDCME", message->messageId - (int)(100.0 * rand() / RAND_MAX));
         return;
     });
     bot.getEvents().onCommand("list", [&bot](Message::Ptr message) {
